@@ -1,0 +1,1967 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MuralMap — стрит-арт Казахстана / Қазақстан стрит-арты</title>
+<meta name="description" content="MuralMap.kz — интерактивная карта муралов и стрит-арта Казахстана с прямыми донатами художникам.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+/* ============================================================
+   MURALMAP — NEO-BRUTALISM / STREET ART
+   ============================================================ */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --paper:#EFEFEA;
+  --concrete:#BDBDB5;
+  --asphalt:#111111;
+  --acid:#E9FF1F;
+  --signal:#FF3B1D;
+  --electro:#2438FF;
+  --hd:70px;
+}
+html,body{height:100%}
+body{
+  font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  color:var(--asphalt);
+  background-color:var(--paper);
+  background-image:
+    linear-gradient(rgba(17,17,17,.055) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(17,17,17,.055) 1px,transparent 1px);
+  background-size:34px 34px;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+h1,h2,h3,h4{font-family:'Oswald',Impact,'Arial Narrow',sans-serif;text-transform:uppercase;line-height:1.03;letter-spacing:.015em;font-weight:700}
+.mono{font-family:'JetBrains Mono',ui-monospace,'Courier New',monospace}
+button{font-family:inherit;cursor:pointer;color:inherit}
+img{display:block;max-width:100%}
+a{color:inherit}
+::selection{background:var(--acid);color:var(--asphalt)}
+
+/* ---------- BUTTONS ---------- */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  border:2px solid var(--asphalt);background:#fff;color:var(--asphalt);
+  padding:10px 16px;font-weight:800;font-size:12.5px;text-transform:uppercase;
+  letter-spacing:.05em;text-decoration:none;line-height:1.1;
+  box-shadow:4px 4px 0 var(--asphalt);
+  transition:transform .07s ease,box-shadow .07s ease,background .15s ease;
+}
+.btn:active{transform:translate(4px,4px);box-shadow:none}
+.btn-acid{background:var(--acid)}
+.btn-dark{background:var(--asphalt);color:var(--paper)}
+.btn-signal{background:var(--signal);color:#fff}
+.btn-ghost{background:transparent}
+.btn-lg{padding:14px 22px;font-size:14px}
+.full{width:100%}
+
+/* ---------- HEADER ---------- */
+.hdr{position:sticky;top:0;z-index:1500;background:var(--paper);border-bottom:3px solid var(--asphalt)}
+.hdr-in{max-width:1440px;margin:0 auto;height:var(--hd);display:flex;align-items:center;gap:12px;padding:0 14px}
+.logo{
+  font-family:'Oswald',Impact,sans-serif;font-weight:700;font-size:20px;letter-spacing:.07em;
+  text-transform:uppercase;text-decoration:none;display:inline-flex;align-items:center;
+  padding:6px 11px;background:var(--acid);border:3px solid var(--asphalt);
+  box-shadow:4px 4px 0 var(--asphalt);white-space:nowrap;
+}
+.logo b{color:var(--signal);font-weight:700}
+.nav{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+.nav button{
+  background:transparent;border:2px solid transparent;padding:8px 11px;
+  font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.045em;
+  transition:background .12s,border-color .12s;
+}
+.nav button:hover{border-color:var(--asphalt)}
+.nav button.active{background:var(--asphalt);color:var(--acid);border-color:var(--asphalt)}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.lang{display:flex;border:2px solid var(--asphalt);background:#fff}
+.lang button{border:0;background:#fff;padding:6px 9px;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:11px}
+.lang button.active{background:var(--asphalt);color:var(--acid)}
+.burger{display:none;border:2px solid var(--asphalt);background:#fff;width:40px;height:36px;font-size:18px;font-weight:800;box-shadow:3px 3px 0 var(--asphalt)}
+
+/* ---------- VIEWS ---------- */
+.view{display:none}
+.view.active{display:block;animation:fade .22s ease}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ---------- SECTION ---------- */
+.sec{max-width:1440px;margin:0 auto;padding:44px 14px}
+.sec-head{margin-bottom:22px;border-left:8px solid var(--acid);padding-left:14px}
+.sec-head h2{font-size:clamp(26px,4vw,44px)}
+.sec-head p{margin-top:7px;font-size:14px;color:#333;max-width:660px;line-height:1.5}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:22px}
+
+/* ---------- HERO ---------- */
+.hero{max-width:1440px;margin:0 auto;padding:36px 14px 0;display:grid;grid-template-columns:1.12fr .88fr;gap:28px;align-items:start}
+.kicker{display:inline-block;background:var(--asphalt);color:var(--acid);font-size:11px;letter-spacing:.18em;padding:6px 10px;margin-bottom:18px;border:2px solid var(--asphalt)}
+.hero-title{font-size:clamp(32px,5.4vw,70px)}
+.hero-title em{font-style:normal;background:var(--acid);box-shadow:6px 6px 0 var(--asphalt);padding:0 8px;display:inline-block}
+.hero-sub{margin-top:18px;font-size:15.5px;line-height:1.6;max-width:580px}
+.hero-cta{display:flex;gap:14px;margin-top:24px;flex-wrap:wrap}
+.hero-stats{margin-top:26px;display:flex;gap:26px;flex-wrap:wrap}
+.hero-stats div{font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;color:#444}
+.hero-stats b{display:block;font-family:'Oswald',sans-serif;font-size:26px;color:var(--asphalt);letter-spacing:.02em}
+.preview-wrap{position:relative;height:380px;border:3px solid var(--asphalt);box-shadow:8px 8px 0 var(--asphalt);background:#111}
+#previewMap{width:100%;height:100%;cursor:pointer}
+.preview-tag{position:absolute;bottom:8px;left:8px;background:var(--paper);border:2px solid var(--asphalt);padding:4px 8px;font-size:10px;z-index:500;font-weight:700}
+.hero-stamp{
+  margin-top:18px;display:inline-block;background:var(--signal);color:#fff;border:3px solid var(--asphalt);
+  padding:8px 12px;font-family:'Oswald',sans-serif;font-size:14px;letter-spacing:.06em;
+  transform:rotate(-2deg);box-shadow:4px 4px 0 var(--asphalt);
+}
+
+/* ---------- TICKER ---------- */
+.ticker{margin:38px 0;border-top:3px solid var(--asphalt);border-bottom:3px solid var(--asphalt);background:var(--asphalt);overflow:hidden}
+.ticker-in{display:inline-flex;white-space:nowrap;animation:marq 50s linear infinite;will-change:transform}
+.ticker:hover .ticker-in{animation-play-state:paused}
+.ticker-item{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--paper);padding:11px 22px;border-right:2px solid #333}
+.ticker-item b{color:var(--acid)}
+.ticker-item .sep{color:var(--signal)}
+@keyframes marq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* ---------- CARDS ---------- */
+.card{
+  background:var(--paper);border:3px solid var(--asphalt);box-shadow:6px 6px 0 var(--asphalt);
+  display:flex;flex-direction:column;transition:transform .12s ease,box-shadow .12s ease;
+}
+.card:hover{transform:translate(-2px,-2px);box-shadow:8px 8px 0 var(--asphalt)}
+.card-img{position:relative;height:180px;border-bottom:3px solid var(--asphalt);overflow:hidden;background:#111}
+.card-img img{width:100%;height:100%;object-fit:cover;filter:grayscale(100%) contrast(115%);transition:filter .3s ease,transform .4s ease}
+.card:hover .card-img img{filter:none;transform:scale(1.04)}
+.stamp{
+  position:absolute;top:8px;left:8px;background:var(--signal);color:#fff;border:2px solid var(--asphalt);
+  font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;padding:4px 7px;
+  letter-spacing:.08em;text-transform:uppercase;transform:rotate(-3deg);
+}
+.stamp.year{left:auto;right:8px;background:var(--acid);color:var(--asphalt);transform:rotate(3deg)}
+.card-body{padding:14px;display:flex;flex-direction:column;gap:9px;flex:1}
+.card-title{font-size:19px;letter-spacing:.01em}
+.card-meta{font-size:11px;color:#444;letter-spacing:.02em;text-transform:uppercase}
+.card-story{font-size:13px;line-height:1.5;color:#222;flex:1}
+.card-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.card-actions .btn{flex:1;padding:9px 10px;font-size:11px;min-width:100px}
+
+/* ---------- SEGMENTED PROGRESS (BATTERY) ---------- */
+.segbar{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;padding:3px;border:2px solid var(--asphalt);background:#fff;height:20px}
+.segbar span{background:var(--concrete);border:1px solid var(--asphalt)}
+.segbar span.on{background:var(--acid)}
+.goal-line{display:flex;justify-content:space-between;font-size:11px;font-weight:700}
+.artist-ava{height:150px;width:100%;object-fit:cover;border-bottom:3px solid var(--asphalt);filter:grayscale(1) contrast(1.1);transition:filter .3s}
+.card:hover .artist-ava{filter:none}
+
+/* ---------- MAP ---------- */
+.map-wrap{position:relative;height:calc(100vh - var(--hd));min-height:520px;border-top:3px solid var(--asphalt)}
+#map{position:absolute;inset:0;background:#111;z-index:1}
+.map-filters{position:absolute;z-index:600;top:12px;left:12px;right:12px;display:flex;flex-wrap:wrap;gap:8px;pointer-events:none}
+.map-filters>*{pointer-events:auto}
+.sel{
+  background:#fff;border:2px solid var(--asphalt);padding:9px 11px;font-weight:800;
+  font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;
+  box-shadow:3px 3px 0 var(--asphalt);cursor:pointer;max-width:100%;
+}
+.sel:active{transform:translate(3px,3px);box-shadow:none}
+.btn-like{background:var(--acid)}
+.map-card{
+  position:absolute;z-index:600;top:12px;right:12px;width:370px;max-height:calc(100% - 24px);
+  overflow:auto;background:var(--paper);border:3px solid var(--asphalt);
+  box-shadow:8px 8px 0 rgba(17,17,17,.85);display:none;
+}
+.map-card.open{display:block}
+.mc-img{position:relative;height:170px;border-bottom:3px solid var(--asphalt);background:#111}
+.mc-img img{width:100%;height:100%;object-fit:cover;filter:grayscale(1) contrast(1.1);transition:filter .3s}
+.mc-img:hover img{filter:none}
+.mc-close{
+  position:absolute;top:8px;right:8px;width:32px;height:32px;border:2px solid var(--asphalt);
+  background:var(--paper);font-size:18px;font-weight:800;line-height:1;box-shadow:3px 3px 0 var(--asphalt);
+}
+.mc-body{padding:14px;display:flex;flex-direction:column;gap:9px}
+.mc-body h3{font-size:22px}
+.mc-row{font-size:12.5px;line-height:1.5}
+.mc-row.mono{font-size:11.5px;color:#333}
+.mc-story{font-size:13px;line-height:1.55;color:#222}
+.mc-author{display:flex;align-items:center;gap:10px;border:2px solid var(--asphalt);padding:7px;background:#fff;cursor:pointer;transition:background .15s}
+.mc-author:hover{background:var(--acid)}
+.mc-author img{width:38px;height:38px;object-fit:cover;border:2px solid var(--asphalt)}
+.mc-author .nm{font-weight:800;font-size:12.5px;line-height:1.2}
+.mc-author .hd{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#555}
+
+/* Leaflet overrides */
+.leaflet-div-icon{background:transparent;border:none}
+.leaflet-container{background:#111;font-family:'Inter',sans-serif}
+.leaflet-control-zoom a{background:var(--paper)!important;color:var(--asphalt)!important;border:2px solid var(--asphalt)!important;font-weight:800;border-radius:0!important}
+.leaflet-control-attribution{background:rgba(239,239,234,.85)!important;font-size:9px!important;border:2px solid var(--asphalt)}
+.leaflet-top,.leaflet-bottom{z-index:500}
+.pin{width:22px;height:22px;background:var(--acid);border:2px solid var(--asphalt);box-shadow:2px 2px 0 var(--asphalt);cursor:pointer;transition:background .15s}
+.pin:hover{background:#fff}
+.pin.active{background:var(--signal)}
+.pin.mod{background:var(--signal);animation:blink 1.4s infinite}
+@keyframes blink{50%{opacity:.45}}
+.clust{
+  min-width:36px;height:36px;padding:0 4px;background:var(--acid);border:3px solid var(--asphalt);
+  display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;
+  font-weight:700;font-size:14px;box-shadow:3px 3px 0 var(--asphalt);cursor:pointer;
+}
+.rnum{
+  width:32px;height:32px;background:var(--asphalt);color:var(--acid);border:3px solid var(--acid);
+  display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;
+  font-weight:700;font-size:12px;box-shadow:2px 2px 0 rgba(0,0,0,.6);
+}
+.pulse{width:14px;height:14px;background:var(--acid);border:2px solid var(--asphalt);position:relative}
+.pulse::after{content:'';position:absolute;inset:-6px;border:2px solid var(--signal);animation:pl 1.7s ease-out infinite}
+@keyframes pl{0%{transform:scale(.55);opacity:1}100%{transform:scale(1.9);opacity:0}}
+
+/* ---------- TOOLBAR / ARTISTS ---------- */
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:22px}
+.toolbar .inp{max-width:320px}
+.inp{
+  background:#fff;border:2px solid var(--asphalt);padding:10px 12px;
+  font-family:'Inter',sans-serif;font-size:14px;width:100%;color:var(--asphalt);
+}
+.inp:focus{outline:3px solid var(--acid);outline-offset:-2px}
+textarea.inp{resize:vertical;min-height:92px;line-height:1.5}
+select.inp{cursor:pointer;font-weight:700;font-size:13px}
+
+/* ---------- ROUTES ---------- */
+.route-card{padding:16px;gap:12px}
+.route-head{display:flex;flex-direction:column;gap:8px}
+.route-city{display:inline-block;align-self:flex-start;background:var(--asphalt);color:var(--acid);font-size:10px;letter-spacing:.14em;padding:4px 8px;text-transform:uppercase;font-weight:700}
+.route-stats{display:flex;gap:10px;flex-wrap:wrap}
+.route-stats span{border:2px solid var(--asphalt);background:#fff;padding:6px 10px;font-size:11px;font-weight:700}
+.route-stats b{font-size:14px}
+.route-list{list-style:none;display:flex;flex-direction:column;gap:6px;margin:2px 0}
+.route-list li{display:flex;align-items:center;gap:8px;font-size:12.5px;border-bottom:1px dashed #999;padding-bottom:6px}
+.route-list .rn{background:var(--asphalt);color:var(--acid);padding:2px 6px;font-size:10.5px;font-weight:700}
+.route-list em{font-style:normal;font-size:10.5px;color:#555;margin-left:auto;text-align:right}
+
+/* ---------- ADD VIEW ---------- */
+.add-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:24px;align-items:start}
+.panel{border:3px solid var(--asphalt);background:var(--paper);box-shadow:6px 6px 0 var(--asphalt);padding:18px}
+.panel-note{font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:8px;background:var(--concrete);border:2px solid var(--asphalt);padding:6px 8px;display:inline-block}
+#pickMap{height:400px;width:100%;border:3px solid var(--asphalt);background:#111}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.field label{font-family:'JetBrains Mono',monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;font-weight:700}
+.preview-box{border:3px solid var(--asphalt);background:#111;height:150px;margin-bottom:14px;overflow:hidden}
+.preview-box img{width:100%;height:100%;object-fit:cover;filter:grayscale(1) contrast(1.15)}
+
+/* ---------- INFO / FAQ ---------- */
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+.manifesto{border:3px solid var(--asphalt);background:var(--asphalt);color:var(--paper);padding:24px;box-shadow:8px 8px 0 var(--acid)}
+.manifesto h2{color:var(--acid);font-size:clamp(24px,3.4vw,38px);margin-bottom:14px}
+.manifesto p{font-size:14px;line-height:1.65;margin-bottom:12px;color:#ddd}
+.manifesto .demo{border:2px dashed var(--signal);color:var(--signal);padding:10px;font-family:'JetBrains Mono',monospace;font-size:11.5px;line-height:1.5}
+.faq-item{border:3px solid var(--asphalt);background:var(--paper);box-shadow:5px 5px 0 var(--asphalt);margin-bottom:12px}
+.faq-item summary{
+  cursor:pointer;padding:14px;font-weight:800;font-size:13.5px;text-transform:uppercase;
+  letter-spacing:.03em;list-style:none;display:flex;justify-content:space-between;gap:10px;
+}
+.faq-item summary::-webkit-details-marker{display:none}
+.faq-item summary::after{content:'+';font-family:'JetBrains Mono',monospace;color:var(--signal);font-size:20px;line-height:1}
+.faq-item[open] summary::after{content:'–'}
+.faq-item p{padding:0 14px 16px;font-size:13.5px;line-height:1.6;color:#222}
+
+/* ---------- MODALS ---------- */
+.modal{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(17,17,17,.72)}
+.modal.open{display:flex}
+.modal-box{
+  position:relative;background:var(--paper);border:3px solid var(--asphalt);
+  box-shadow:10px 10px 0 var(--asphalt);width:min(660px,100%);max-height:92vh;overflow:auto;padding:22px;
+  animation:pop .18s ease;
+}
+@keyframes pop{from{transform:translateY(14px) scale(.98);opacity:0}to{transform:none;opacity:1}}
+.modal-x{
+  position:absolute;top:10px;right:10px;width:34px;height:34px;border:2px solid var(--asphalt);
+  background:var(--paper);font-size:20px;font-weight:800;line-height:1;box-shadow:3px 3px 0 var(--asphalt);z-index:3;
+}
+.modal-x:active{transform:translate(3px,3px);box-shadow:none}
+.modal-title{font-size:clamp(22px,3.4vw,32px);padding-right:42px;margin-bottom:16px}
+#donateModal{z-index:2200}
+.presets{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+.preset{
+  border:2px solid var(--asphalt);background:#fff;padding:10px 4px;
+  font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12.5px;
+  box-shadow:3px 3px 0 var(--asphalt);transition:background .12s,transform .07s;
+}
+.preset:active{transform:translate(3px,3px);box-shadow:none}
+.preset.active{background:var(--acid)}
+.feebox{border:3px solid var(--asphalt);background:var(--concrete);padding:12px;margin-bottom:16px}
+.fee-row{display:flex;justify-content:space-between;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:4px 0}
+.fee-row b{font-family:'JetBrains Mono',monospace;font-size:13px}
+.success{text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px;padding:10px 0}
+.big-stamp{
+  border:6px solid var(--signal);color:var(--signal);font-family:'Oswald',sans-serif;
+  font-weight:700;font-size:clamp(26px,6vw,42px);padding:8px 22px;transform:rotate(-7deg);
+  text-transform:uppercase;letter-spacing:.06em;display:inline-block;
+}
+.success h3{font-size:24px}
+.success p{font-size:13.5px;line-height:1.6;max-width:420px;color:#222}
+.success .sum{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700;background:var(--acid);border:2px solid var(--asphalt);padding:6px 12px}
+
+/* artist profile modal */
+.ap-head{display:flex;gap:16px;align-items:center;margin-bottom:16px}
+.ap-ava{width:96px;height:96px;object-fit:cover;border:3px solid var(--asphalt);box-shadow:5px 5px 0 var(--asphalt)}
+.ap-handle{font-size:11.5px;color:#555;margin-top:4px}
+.ap-since{font-size:10.5px;color:#777;margin-top:2px;text-transform:uppercase;letter-spacing:.08em}
+.ap-bio{font-size:13.5px;line-height:1.6;margin-bottom:14px;border-left:6px solid var(--acid);padding-left:12px}
+.ap-social{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.ap-social span{border:2px solid var(--asphalt);background:#fff;padding:4px 8px;font-size:10.5px}
+.goalbox{border:3px solid var(--asphalt);background:var(--concrete);padding:14px;margin-bottom:18px}
+.goal-head{display:flex;justify-content:space-between;gap:10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;flex-wrap:wrap}
+.goal-pct{font-size:11px;margin-top:8px;text-align:right}
+.ap-works-title{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:10px}
+.mini-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-bottom:18px}
+.mini{border:2px solid var(--asphalt);background:#111;padding:0;overflow:hidden;text-align:left;transition:transform .1s}
+.mini:hover{transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--asphalt)}
+.mini img{width:100%;height:78px;object-fit:cover;filter:grayscale(1);transition:filter .25s}
+.mini:hover img{filter:none}
+.mini span{display:block;background:var(--paper);border-top:2px solid var(--asphalt);font-size:10px;font-weight:800;padding:5px 6px;text-transform:uppercase;line-height:1.2}
+
+/* ---------- TOAST ---------- */
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translate(-50%,160%);
+  background:var(--asphalt);color:var(--acid);border:3px solid var(--acid);
+  padding:12px 18px;font-family:'JetBrains Mono',monospace;font-size:12px;
+  z-index:3000;transition:transform .3s ease;max-width:92vw;text-align:center;
+}
+#toast.show{transform:translate(-50%,0)}
+
+/* ---------- RESPONSIVE ---------- */
+@media (max-width:1060px){
+  .hero{grid-template-columns:1fr}
+  .add-grid{grid-template-columns:1fr}
+  .info-grid{grid-template-columns:1fr}
+}
+@media (max-width:1000px){
+  .nav{
+    display:none;position:absolute;top:100%;left:0;right:0;background:var(--paper);
+    border-bottom:3px solid var(--asphalt);flex-direction:column;padding:10px;gap:6px;
+    box-shadow:0 8px 0 rgba(17,17,17,.25);
+  }
+  .nav.open{display:flex}
+  .nav button{text-align:left;padding:13px}
+  .burger{display:block}
+  .hdr-right{margin-left:auto}
+  .hdr-in{gap:8px}
+  .logo{font-size:16px;padding:6px 9px}
+}
+@media (max-width:860px){
+  .map-card{
+    display:block;left:0;right:0;bottom:0;top:auto;width:auto;max-height:72%;
+    border-left:0;border-right:0;border-bottom:0;box-shadow:0 -6px 0 rgba(17,17,17,.85);
+    transform:translateY(102%);transition:transform .3s ease;
+  }
+  .map-card.open{transform:translateY(0)}
+  .map-card:not(.open){pointer-events:none}
+  .map-filters{top:8px;left:8px;right:8px}
+  .sel{font-size:10.5px;padding:8px 9px}
+  .hero{padding-top:22px}
+  .preview-wrap{height:280px}
+  .presets{grid-template-columns:repeat(2,1fr)}
+  .modal-box{padding:16px}
+  #pickMap{height:300px}
+  .hero-stats{gap:18px}
+}
+@media (max-width:520px){
+  .hero-cta .btn{width:100%}
+  .card-actions .btn{min-width:0}
+}
+</style>
+</head>
+<body>
+
+<!-- ================= HEADER ================= -->
+<header class="hdr">
+  <div class="hdr-in">
+    <a href="#" class="logo" data-nav="home">MURAL<b>MAP</b></a>
+    <nav class="nav" id="nav">
+      <button data-nav="home" class="active" data-i18n="nav.home">Главная</button>
+      <button data-nav="map" data-i18n="nav.map">Карта</button>
+      <button data-nav="artists" data-i18n="nav.artists">Художники</button>
+      <button data-nav="routes" data-i18n="nav.routes">Маршруты</button>
+      <button data-nav="add" data-i18n="nav.add">Добавить</button>
+      <button data-nav="info" data-i18n="nav.info">О проекте</button>
+    </nav>
+    <div class="hdr-right">
+      <div class="lang">
+        <button data-lang="kz">KZ</button>
+        <button data-lang="ru" class="active">RU</button>
+      </div>
+      <button class="btn btn-acid" data-act="donate" data-i18n="btn.donate">Задонатить</button>
+      <button class="burger" id="burger" aria-label="menu">≡</button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<!-- ================= HOME ================= -->
+<section id="view-home" class="view active">
+  <div class="hero">
+    <div class="hero-left">
+      <div class="kicker mono" data-i18n="hero.kicker">СТРИТ-АРТ · КАЗАХСТАН · 2026</div>
+      <h1 class="hero-title" data-i18n="hero.title">Город — это галерея под открытым небом</h1>
+      <p class="hero-sub" data-i18n="hero.sub">Находи муралы на карте, слушай истории стен и поддерживай уличных художников напрямую — без галерей и посредников.</p>
+      <div class="hero-cta">
+        <button class="btn btn-acid btn-lg" data-nav="map" data-i18n="hero.ctaMap">Открыть карту</button>
+        <button class="btn btn-lg" data-act="donate" data-i18n="hero.ctaDonate">Задонатить</button>
+      </div>
+      <div class="hero-stats" id="heroStats"></div>
+    </div>
+    <div class="hero-right">
+      <div class="preview-wrap">
+        <div id="previewMap"></div>
+        <div class="preview-tag mono">N 43.2389 · E 76.8897</div>
+      </div>
+      <div class="hero-stamp" data-i18n="hero.stamp">ДОНАТ ХУДОЖНИКУ НАПРЯМУЮ</div>
+    </div>
+  </div>
+
+  <div class="ticker"><div class="ticker-in" id="tickerTrack"></div></div>
+
+  <section class="sec">
+    <div class="sec-head">
+      <h2 data-i18n="home.fresh">Свежие муралы</h2>
+      <p data-i18n="home.freshSub">Последние работы, добавленные кураторами и самими художниками.</p>
+    </div>
+    <div class="grid" id="freshGrid"></div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head">
+      <h2 data-i18n="home.top">Топ художников</h2>
+      <p data-i18n="home.topSub">Сборы идут на краску, леса и подъёмники. Комиссия платформы — 5%.</p>
+    </div>
+    <div class="grid" id="topArtists"></div>
+  </section>
+</section>
+
+<!-- ================= MAP ================= -->
+<section id="view-map" class="view">
+  <div class="map-wrap">
+    <div id="map"></div>
+    <div class="map-filters">
+      <select class="sel" id="fCity"></select>
+      <select class="sel" id="fStyle"></select>
+      <select class="sel" id="fArtist"></select>
+      <button class="sel btn-like" id="btnNear" data-i18n="map.near">Рядом со мной</button>
+      <button class="sel btn-like" id="btnClearRoute" style="display:none" data-i18n="map.clearRoute">Сбросить маршрут</button>
+    </div>
+    <aside class="map-card" id="mapCard"></aside>
+  </div>
+</section>
+
+<!-- ================= ARTISTS ================= -->
+<section id="view-artists" class="view">
+  <div class="sec">
+    <div class="sec-head">
+      <h2 data-i18n="artists.title">Художники</h2>
+      <p data-i18n="artists.sub">Те, кто делает стены города громче.</p>
+    </div>
+    <div class="toolbar">
+      <input class="inp" id="artistSearch" data-i18n-ph="artists.search" placeholder="Поиск по имени или нику">
+      <select class="sel" id="artistCity"></select>
+      <select class="sel" id="artistSort"></select>
+    </div>
+    <div class="grid" id="artistsGrid"></div>
+  </div>
+</section>
+
+<!-- ================= ROUTES ================= -->
+<section id="view-routes" class="view">
+  <div class="sec">
+    <div class="sec-head">
+      <h2 data-i18n="routes.title">Маршруты</h2>
+      <p data-i18n="routes.sub">Кураторские арт-прогулки: муралы, дворы и правильный свет.</p>
+    </div>
+    <div class="grid" id="routesGrid"></div>
+  </div>
+</section>
+
+<!-- ================= ADD ================= -->
+<section id="view-add" class="view">
+  <div class="sec">
+    <div class="sec-head">
+      <h2 data-i18n="add.title">Добавить мурал</h2>
+      <p data-i18n="add.sub">Знаешь стену, которой нет на карте? Заполни форму — после модерации точка появится на карте.</p>
+    </div>
+    <div class="add-grid">
+      <form class="panel" id="addForm" novalidate>
+        <div class="field">
+          <label data-i18n="add.city">Город</label>
+          <select class="inp" id="addCity" name="city"></select>
+        </div>
+        <div class="field">
+          <label data-i18n="add.name">Название мурала</label>
+          <input class="inp" name="title" autocomplete="off">
+        </div>
+        <div class="field">
+          <label data-i18n="add.author">Автор / ник</label>
+          <input class="inp" name="author" autocomplete="off">
+        </div>
+        <div class="field">
+          <label data-i18n="add.address">Адрес</label>
+          <input class="inp" name="address" autocomplete="off">
+        </div>
+        <div class="field">
+          <label data-i18n="add.story">История создания</label>
+          <textarea class="inp" name="story"></textarea>
+        </div>
+        <div class="field">
+          <label data-i18n="add.coords">Координаты</label>
+          <input class="inp mono" id="addCoords" readonly placeholder="43.23890, 76.88970">
+        </div>
+        <div class="field">
+          <label data-i18n="add.photo">Фото мурала</label>
+          <input type="file" id="addFile" accept="image/*" class="inp">
+        </div>
+        <div class="preview-box"><img id="addPreview" alt="preview"></div>
+        <button class="btn btn-acid btn-lg full" type="submit" data-i18n="add.submit">Отправить на модерацию</button>
+      </form>
+      <div>
+        <div class="panel-note mono" data-i18n="add.pick">Кликни по мини-карте, чтобы поставить точку</div>
+        <div id="pickMap"></div>
+        <div class="panel-note mono" style="margin-top:12px" data-i18n="add.preview">Предпросмотр (ч/б)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= INFO ================= -->
+<section id="view-info" class="view">
+  <div class="sec">
+    <div class="sec-head">
+      <h2 data-i18n="info.title">О проекте</h2>
+    </div>
+    <div class="info-grid">
+      <div class="manifesto">
+        <h2 data-i18n="info.manifesto">Без галерей и посредников</h2>
+        <p data-i18n="info.p1">MuralMap — независимая карта стрит-арта Казахстана. Мы собираем муралы Алматы, Астаны и Шымкента в одном месте: адрес, координаты, автор, история создания.</p>
+        <p data-i18n="info.p2">Донаты уходят напрямую художникам. Платформа удерживает 5% на хостинг и модерацию, остальные 95% — на краску, леса и подъёмники.</p>
+        <div class="demo mono" data-i18n="info.demo">Демо-режим: реальные платежи не проводятся, данные хранятся только в браузере.</div>
+      </div>
+      <div>
+        <div class="sec-head" style="margin-bottom:16px"><h2 style="font-size:26px" data-i18n="info.faq">FAQ</h2></div>
+        <div id="faq"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ================= MODALS ================= -->
+<div class="modal" id="donateModal">
+  <div class="modal-box">
+    <button class="modal-x" data-act="closeModal" aria-label="close">×</button>
+    <div id="donateBody"></div>
+  </div>
+</div>
+
+<div class="modal" id="artistModal">
+  <div class="modal-box">
+    <button class="modal-x" data-act="closeModal" aria-label="close">×</button>
+    <div id="artistBody"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* ============================================================
+   0. HELPERS
+   ============================================================ */
+function hashStr(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
+function rng(seed){let s=seed>>>0;return function(){s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296;};}
+
+/* ============================================================
+   1. GENERATED SVG ARTWORK (no broken images ever)
+   ============================================================ */
+const PALETTE = ['#E9FF1F','#FF3B1D','#2438FF','#EFEFEA','#BDBDB5'];
+
+function artURI(seed){
+  const r = rng(hashStr('art:'+seed));
+  const W=640,H=420;
+  let s = '<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'">';
+  s += '<defs><pattern id="hz" width="24" height="24" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">'
+     + '<rect width="12" height="24" fill="#E9FF1F"/></pattern></defs>';
+  s += '<rect width="'+W+'" height="'+H+'" fill="#111111"/>';
+  let grid='';
+  for(let x=0;x<=W;x+=40) grid+='M'+x+' 0V'+H;
+  for(let y=0;y<=H;y+=40) grid+='M0 '+y+'H'+W;
+  s += '<path d="'+grid+'" stroke="#232323" stroke-width="1" fill="none"/>';
+
+  const n = 4 + Math.floor(r()*3);
+  for(let i=0;i<n;i++){
+    const c = PALETTE[Math.floor(r()*PALETTE.length)];
+    const x = Math.floor(r()*W), y = Math.floor(r()*H);
+    const w = 70+Math.floor(r()*270), h = 50+Math.floor(r()*190);
+    const rot = Math.floor(r()*8)*45;
+    s += '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" fill="'+c+'" opacity="'+(0.45+r()*0.55).toFixed(2)+'" transform="rotate('+rot+' '+x+' '+y+')"/>';
+  }
+  for(let i=0;i<3;i++){
+    s += '<circle cx="'+Math.floor(r()*W)+'" cy="'+Math.floor(r()*H)+'" r="'+(30+Math.floor(r()*80))
+      + '" fill="none" stroke="'+PALETTE[Math.floor(r()*3)]+'" stroke-width="'+(6+Math.floor(r()*10))+'"/>';
+  }
+  let dots='';
+  for(let i=0;i<70;i++){
+    dots += '<circle cx="'+Math.floor(r()*W)+'" cy="'+Math.floor(r()*H)+'" r="'+(1+Math.floor(r()*3))
+      + '" fill="'+PALETTE[Math.floor(r()*5)]+'" opacity=".7"/>';
+  }
+  s += dots;
+  s += '<rect x="0" y="'+(H-34)+'" width="'+W+'" height="34" fill="url(#hz)"/>';
+  s += '<rect x="0" y="'+(H-34)+'" width="'+W+'" height="34" fill="none" stroke="#111" stroke-width="6"/>';
+  s += '</svg>';
+  return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s);
+}
+
+function avatarURI(seed, letter){
+  const r = rng(hashStr('ava:'+seed));
+  const S=300;
+  let s = '<svg xmlns="http://www.w3.org/2000/svg" width="'+S+'" height="'+S+'" viewBox="0 0 '+S+' '+S+'">';
+  s += '<rect width="'+S+'" height="'+S+'" fill="#111111"/>';
+  s += '<circle cx="'+(S*0.5)+'" cy="'+(S*0.55)+'" r="'+(S*0.34)+'" fill="'+PALETTE[Math.floor(r()*3)]+'"/>';
+  s += '<rect x="'+(20+Math.floor(r()*50))+'" y="'+(20+Math.floor(r()*40))+'" width="'+(60+Math.floor(r()*80))
+     + '" height="'+(40+Math.floor(r()*70))+'" fill="'+PALETTE[Math.floor(r()*5)]+'" opacity=".85"/>';
+  s += '<rect x="0" y="'+(S-26)+'" width="'+S+'" height="26" fill="#FF3B1D"/>';
+  s += '<text x="50%" y="52%" text-anchor="middle" dominant-baseline="middle" font-family="Oswald, Impact, sans-serif" font-size="165" font-weight="700" fill="#111">'+letter+'</text>';
+  s += '</svg>';
+  return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s);
+}
+
+/* ============================================================
+   2. MOCK DATA
+   ============================================================ */
+const CITIES = {
+  almaty:   {ru:'Алматы',   kz:'Алматы'},
+  astana:   {ru:'Астана',   kz:'Астана'},
+  shymkent: {ru:'Шымкент',  kz:'Шымкент'}
+};
+const CITIES_CENTER = {
+  almaty:[43.2389,76.8897],
+  astana:[51.1694,71.4491],
+  shymkent:[42.3170,69.5900]
+};
+const STYLES = {
+  street:  {ru:'Стрит-арт',   kz:'Стрит-арт'},
+  graffiti:{ru:'Граффити',    kz:'Граффити'},
+  ethno:   {ru:'Этно-модерн', kz:'Этно-модерн'},
+  stencil: {ru:'Трафарет',    kz:'Трафарет'}
+};
+
+const ARTISTS = [
+  {
+    id:'a1', handle:'@pasha_cas', city:'almaty', since:2014,
+    name:{ru:'Павел «PASHA CAS» Ким', kz:'Павел «PASHA CAS» Ким'},
+    bio:{
+      ru:'Вырос в Алматы, начинал с гаражей в районе Кок-Тобе. Работает в технике многослойного трафарета и большой формы. Считает, что стена — это разговор, а не декорация.',
+      kz:'Алматыда өсті, Көк-Төбе маңындағы гараждардан бастады. Көпқабатты трафарет және үлкен форма техникасында жұмыс істейді. Қабырға — декор емес, әңгіме деп санайды.'
+    },
+    goal:200000, raised:145000,
+    goalLabel:{ru:'Фасадная краска и подъёмник', kz:'Қасбет сыры мен көтергіш'},
+    socials:['instagram.com/pasha_cas','t.me/pashacas']
+  },
+  {
+    id:'a2', handle:'@aigerim_spray', city:'astana', since:2017,
+    name:{ru:'Айгерим Нурланова', kz:'Айгерим Нұрланова'},
+    bio:{
+      ru:'Архитектор по образованию, художник по призванию. Исследует цифровую эстетику в городской среде: пиксели, коды, сетки.',
+      kz:'Білімі бойынша сәулетші, шақыруы бойынша суретші. Қалалық ортадағы цифрлық эстетиканы зерттейді: пиксельдер, кодтар, торлар.'
+    },
+    goal:180000, raised:96000,
+    goalLabel:{ru:'Леса и аэрозоль на зимнюю стену', kz:'Қысқы қабырғаға орналастыру мен аэрозоль'},
+    socials:['instagram.com/aigerim_spray']
+  },
+  {
+    id:'a3', handle:'@saken_ts', city:'shymkent', since:2012,
+    name:{ru:'Сакен Жумабаев', kz:'Сәкен Жұмабаев'},
+    bio:{
+      ru:'Южный колорит, ткани, базарные вывески. Пишет большие фигуры и тёплые цвета, любит работать на рассвете, пока улица пустая.',
+      kz:'Оңтүстік колориті, маталар, базар маңдайшалары. Үлкен фигуралар мен жылы түстерді салады, көше бос кезде таңертең жұмыс істеуді жақсы көреді.'
+    },
+    goal:150000, raised:62000,
+    goalLabel:{ru:'Пигменты и защитный лак для мурала', kz:'Пигменттер мен муралға қорғаныш лак'},
+    socials:['instagram.com/saken_ts','vk.com/saken_ts']
+  },
+  {
+    id:'a4', handle:'@dana_stencil', city:'almaty', since:2018,
+    name:{ru:'Дана Оспанова', kz:'Дана Оспанова'},
+    bio:{
+      ru:'Трафарет, текст и немного иронии. Работает быстро — пока не приехал патруль. Автор серии «Город спит» о ночных сменах.',
+      kz:'Трафарет, мәтін және аздап ирония. Патруль келмей тұрып, тез жұмыс істейді. «Қала ұйықтап жатыр» топтамасының авторы.'
+    },
+    goal:120000, raised:118000,
+    goalLabel:{ru:'Новые трафареты и краска', kz:'Жаңа трафареттер мен сыр'},
+    socials:['instagram.com/dana_stencil']
+  },
+  {
+    id:'a5', handle:'@erlan_graf', city:'almaty', since:2009,
+    name:{ru:'Ерлан «GRAF» Ахметов', kz:'Ерлан «GRAF» Ахметов'},
+    bio:{
+      ru:'Ветеран казахстанского граффити. Учит молодых ребят легальным стенам и композиции. Убеждён, что город принадлежит тем, кто в нём рисует.',
+      kz:'Қазақстандық граффитидің ардагері. Жастарды заңды қабырғалар мен композицияға үйретеді. Қала — онда сурет салатындардың меншігі деп сенеді.'
+    },
+    goal:250000, raised:40000,
+    goalLabel:{ru:'Большая стена: аренда и материалы', kz:'Үлкен қабырға: жалдау және материалдар'},
+    socials:['instagram.com/erlan_graf','youtube.com/@erlangraf']
+  },
+  {
+    id:'a6', handle:'@madina_ethno', city:'astana', since:2016,
+    name:{ru:'Мадина Сейтқали', kz:'Мадина Сейтқали'},
+    bio:{
+      ru:'Этно-модерн: казахский орнамент в кислотной палитре. Считает, что традиция должна не шёпотом говорить, а кричать.',
+      kz:'Этно-модерн: қышқыл палитрадағы қазақ оюы. Дәстүр сыбырламай, айқайлауы керек деп санайды.'
+    },
+    goal:200000, raised:130000,
+    goalLabel:{ru:'Леса и краска для 12-метровой стены', kz:'12 метрлік қабырғаға орналастыру мен сыр'},
+    socials:['instagram.com/madina_ethno']
+  }
+];
+
+const MURALS = [
+  {
+    id:'m1', city:'almaty', artistId:'a1', lat:43.2455, lng:76.9420, year:2021, style:'street',
+    title:{ru:'Степной волк', kz:'Дала қасқыры'},
+    address:{ru:'Алматы, ул. Толе би, 59', kz:'Алматы, Төле би к-сі, 59'},
+    story:{
+      ru:'Пятиэтажный фасад с волком, собранным из казахских орнаментов. Работа заняла 11 дней и 90 литров краски.',
+      kz:'Қазақ ою-өрнегінен жиналған қасқыр бейнеленген бесқабат үй. Жұмыс 11 күнге созылып, 90 литр сыр жұмсалды.'
+    }
+  },
+  {
+    id:'m2', city:'almaty', artistId:'a4', lat:43.2590, lng:76.9450, year:2022, style:'ethno',
+    title:{ru:'Девушка-птица', kz:'Құс қыз'},
+    address:{ru:'Алматы, Арбат, ул. Жибек Жолы', kz:'Алматы, Арбат, Жібек Жолы к-сі'},
+    story:{
+      ru:'Мурал-оммаж кочевому прошлому: девушка, чьи волосы превращаются в стаю птиц.',
+      kz:'Көшпелі өткенге арналған мурал: шашы құс тобына айналатын қыз.'
+    }
+  },
+  {
+    id:'m3', city:'almaty', artistId:'a5', lat:43.2530, lng:76.9500, year:2020, style:'graffiti',
+    title:{ru:'Асфальт джаз', kz:'Асфальт джазы'},
+    address:{ru:'Алматы, ул. Гоголя, 40', kz:'Алматы, Гоголь к-сі, 40'},
+    story:{
+      ru:'Импровизация на тему ночного города: саксофонист, растворённый в геометрии улиц.',
+      kz:'Түнгі қала тақырыбындағы импровизация: көше геометриясына сіңген саксофоншы.'
+    }
+  },
+  {
+    id:'m4', city:'almaty', artistId:'a4', lat:43.2470, lng:76.9300, year:2023, style:'stencil',
+    title:{ru:'Город спит', kz:'Қала ұйықтап жатыр'},
+    address:{ru:'Алматы, ул. Сейфуллина, 120', kz:'Алматы, Сейфуллин к-сі, 120'},
+    story:{
+      ru:'Серия трафаретов о ночных сменах: дворники, таксисты, пекари.',
+      kz:'Түнгі ауысым туралы трафареттер топтамасы: сыпырушылар, таксишілер, наубайшылар.'
+    }
+  },
+  {
+    id:'m5', city:'almaty', artistId:'a6', lat:43.2400, lng:76.9400, year:2019, style:'ethno',
+    title:{ru:'Яблоки Алматы', kz:'Алматы алмалары'},
+    address:{ru:'Алматы, ул. Панфилова, 92', kz:'Алматы, Панфилов к-сі, 92'},
+    story:{
+      ru:'Апорт как символ города — шесть метров ярких яблок на бетоне.',
+      kz:'Апорт — қала символы: бетондағы алты метрлік жарқын алмалар.'
+    }
+  },
+  {
+    id:'m6', city:'astana', artistId:'a2', lat:51.1694, lng:71.4491, year:2022, style:'street',
+    title:{ru:'Степь 2050', kz:'Дала 2050'},
+    address:{ru:'Астана, пр. Республики, 12', kz:'Астана, Республика д-лы, 12'},
+    story:{
+      ru:'Футуристический пейзаж степи: ветряки, юрты и неоновые линии горизонта.',
+      kz:'Даланың футуристік пейзажы: жел диірмендері, киіз үйлер және неон көкжиек сызықтары.'
+    }
+  },
+  {
+    id:'m7', city:'astana', artistId:'a2', lat:51.1650, lng:71.4300, year:2021, style:'graffiti',
+    title:{ru:'Код Кенесары', kz:'Кенесары коды'},
+    address:{ru:'Астана, ул. Кенесары, 40', kz:'Астана, Кенесары к-сі, 40'},
+    story:{
+      ru:'Граффити-размышление о цифровизации: орнамент, собранный из пикселей.',
+      kz:'Цифрландыру туралы граффити-ой: пиксельдерден жиналған ою.'
+    }
+  },
+  {
+    id:'m8', city:'astana', artistId:'a6', lat:51.1250, lng:71.4300, year:2023, style:'ethno',
+    title:{ru:'Орнамент Мангилик', kz:'Мәңгілік оюы'},
+    address:{ru:'Астана, пр. Мангилик Ел, 53', kz:'Астана, Мәңгілік Ел д-лы, 53'},
+    story:{
+      ru:'Этно-модерн: традиционный ою в кислотных цветах на 12-метровой стене.',
+      kz:'Этно-модерн: 12 метрлік қабырғадағы қышқыл түстердегі дәстүрлі ою.'
+    }
+  },
+  {
+    id:'m9', city:'shymkent', artistId:'a3', lat:42.3170, lng:69.5900, year:2021, style:'ethno',
+    title:{ru:'Краски юга', kz:'Оңтүстік бояулары'},
+    address:{ru:'Шымкент, ул. Тауке хана, 30', kz:'Шымкент, Тәуке хан к-сі, 30'},
+    story:{
+      ru:'Тёплые оттенки, тканевые узоры и рынок как главный герой.',
+      kz:'Жылы реңктер, мата өрнектері және басты кейіпкер — базар.'
+    }
+  },
+  {
+    id:'m10', city:'shymkent', artistId:'a3', lat:42.3100, lng:69.6000, year:2022, style:'street',
+    title:{ru:'Арыс', kz:'Арыс'},
+    address:{ru:'Шымкент, пр. Абая, 15', kz:'Шымкент, Абай д-лы, 15'},
+    story:{
+      ru:'Река как метафора времени: поток линий через весь фасад.',
+      kz:'Өзен — уақыт метафорасы: бүкіл қасбет арқылы ағатын сызықтар.'
+    }
+  },
+  {
+    id:'m11', city:'shymkent', artistId:'a5', lat:42.3250, lng:69.5800, year:2020, style:'graffiti',
+    title:{ru:'Шымкент джаз', kz:'Шымкент джазы'},
+    address:{ru:'Шымкент, ул. Казыбек би, 18', kz:'Шымкент, Қазыбек би к-сі, 18'},
+    story:{
+      ru:'Барабаны, трубы и южное солнце в одной композиции.',
+      kz:'Барабандар, трубалар және оңтүстік күн — бір композицияда.'
+    }
+  },
+  {
+    id:'m12', city:'shymkent', artistId:'a4', lat:42.3200, lng:69.5950, year:2023, style:'stencil',
+    title:{ru:'Пиала', kz:'Пиала'},
+    address:{ru:'Шымкент, ул. Желтоксан, 7', kz:'Шымкент, Желтоқсан к-сі, 7'},
+    story:{
+      ru:'Трафарет-серия про чайные традиции юга.',
+      kz:'Оңтүстіктің шай дәстүрі туралы трафареттер топтамасы.'
+    }
+  }
+];
+
+const ROUTES = [
+  {
+    id:'r1', city:'almaty', murals:['m1','m2','m3','m4'], distance:4.2,
+    time:{ru:'1 ч 30 мин', kz:'1 сағ 30 мин'},
+    name:{ru:'Золотой квадрат Алматы: 4 мурала за 1.5 часа', kz:'Алматының алтын квадраты: 1.5 сағатта 4 мурал'},
+    desc:{ru:'Классический маршрут по центру: от Толе би до Арбата, через Гоголя и Сейфуллина.', kz:'Орталық бойынша классикалық маршрут: Төле биден Арбатқа дейін, Гоголь және Сейфуллин арқылы.'}
+  },
+  {
+    id:'r2', city:'astana', murals:['m6','m7','m8'], distance:5.6,
+    time:{ru:'1 ч 40 мин', kz:'1 сағ 40 мин'},
+    name:{ru:'Правый берег Астаны: уличный код', kz:'Астананың оң жағалауы: көше коды'},
+    desc:{ru:'От проспекта Республики до Мангилик Ел — три больших стены и один закат.', kz:'Республика даңғылынан Мәңгілік Елге дейін — үш үлкен қабырға және бір күн батысы.'}
+  },
+  {
+    id:'r3', city:'shymkent', murals:['m9','m10','m11','m12'], distance:3.4,
+    time:{ru:'1 ч 20 мин', kz:'1 сағ 20 мин'},
+    name:{ru:'Шымкент: краски юга', kz:'Шымкент: оңтүстік бояулары'},
+    desc:{ru:'Тёплый вечер, чайхана и четыре мурала в сердце южной столицы.', kz:'Жылы кеш, шайхана және оңтүстік астананың жүрегіндегі төрт мурал.'}
+  }
+];
+
+const FAQ_KEYS = [
+  ['info.faq1q','info.faq1a'],
+  ['info.faq2q','info.faq2a'],
+  ['info.faq3q','info.faq3a'],
+  ['info.faq4q','info.faq4a'],
+  ['info.faq5q','info.faq5a']
+];
+
+/* attach generated media */
+MURALS.forEach(function(m){ m.photo = artURI(m.id); m.status = 'published'; });
+ARTISTS.forEach(function(a){
+  const letter = (a.handle.replace('@','')[0] || 'M').toUpperCase();
+  a.avatar = avatarURI(a.id, letter);
+});
+
+/* demo transaction feed */
+const TX = [
+  {name:'Айдос',    handle:'@pasha_cas',    amount:2500, msg:{ru:'На краску для фасада', kz:'Қасбет сырына'}},
+  {name:'Динара',   handle:'@dana_stencil', amount:1000, msg:{ru:'Трафареты — огонь', kz:'Трафареттер — от!'}},
+  {name:'Ержан',    handle:'@madina_ethno', amount:5000, msg:{ru:'Ою әлемі үшін', kz:'Ою әлемі үшін'}},
+  {name:'Мария',    handle:'@saken_ts',     amount:500,  msg:{ru:'Юг в деле', kz:'Оңтүстік керемет'}},
+  {name:'Тимур',    handle:'@aigerim_spray',amount:1000, msg:{ru:'На аэрозоль', kz:'Аэрозольға'}}
+];
+
+/* ============================================================
+   3. I18N
+   ============================================================ */
+const I18N = {
+  ru: {
+    'nav.home':'Главная','nav.map':'Карта','nav.artists':'Художники','nav.routes':'Маршруты',
+    'nav.add':'Добавить','nav.info':'О проекте','btn.donate':'Задонатить',
+
+    'hero.kicker':'СТРИТ-АРТ · КАЗАХСТАН · 2026',
+    'hero.title':'Город — это галерея под открытым небом',
+    'hero.sub':'Находи муралы на карте, слушай истории стен и поддерживай уличных художников напрямую — без галерей и посредников.',
+    'hero.ctaMap':'Открыть карту','hero.ctaDonate':'Задонатить',
+    'hero.stamp':'ДОНАТ ХУДОЖНИКУ НАПРЯМУЮ',
+    'hero.stat.murals':'муралов','hero.stat.artists':'художников','hero.stat.raised':'собрано',
+
+    'home.fresh':'Свежие муралы',
+    'home.freshSub':'Последние работы, добавленные кураторами и самими художниками.',
+    'home.top':'Топ художников',
+    'home.topSub':'Сборы идут на краску, леса и подъёмники. Комиссия платформы — 5%.',
+
+    'map.near':'Рядом со мной','map.clearRoute':'Сбросить маршрут',
+    'filter.city':'Город','filter.style':'Стиль','filter.artist':'Автор','filter.all':'Все',
+    'map.coords':'Координаты','map.story':'История',
+    'map.support':'Поддержать автора','map.profile':'Профиль художника',
+
+    'artists.title':'Художники','artists.sub':'Те, кто делает стены города громче.',
+    'artists.search':'Поиск по имени или нику',
+    'artists.sortRaised':'По сумме сборов','artists.sortName':'По имени',
+    'artists.works':'работ','artists.goal':'Цель сбора','artists.donate':'Донат',
+    'artists.profile':'Профиль','artists.since':'в стрит-арте с','artists.social':'Соцсети',
+    'artists.onMap':'Работы на карте',
+
+    'routes.title':'Маршруты','routes.sub':'Кураторские арт-прогулки: муралы, дворы и правильный свет.',
+    'route.points':'точек','route.distance':'Дистанция','route.time':'Время',
+    'route.show':'Показать маршрут на карте','route.km':'км','route.min':'мин','route.hour':'ч',
+
+    'add.title':'Добавить мурал',
+    'add.sub':'Знаешь стену, которой нет на карте? Заполни форму — после модерации точка появится на карте.',
+    'add.city':'Город','add.name':'Название мурала','add.author':'Автор / ник',
+    'add.story':'История создания','add.address':'Адрес','add.coords':'Координаты',
+    'add.pick':'Кликни по мини-карте, чтобы поставить точку',
+    'add.photo':'Фото мурала','add.upload':'Выбрать файл','add.preview':'Предпросмотр (ч/б)',
+    'add.submit':'Отправить на модерацию',
+    'add.success':'Мурал отправлен на модерацию. Точка уже на карте!',
+    'add.required':'Заполни обязательные поля',
+
+    'donate.title':'Донат художнику','donate.to':'Получатель','donate.amount':'Сумма доната',
+    'donate.custom':'Своя сумма, ₸','donate.name':'Ваше имя','donate.msg':'Сообщение художнику',
+    'donate.phName':'Например, Айдос','donate.phMsg':'На краску для фасада',
+    'donate.fee':'Комиссия и выплата','donate.artistGets':'Художнику',
+    'donate.platform':'Комиссия платформы','donate.submit':'Отправить донат (Демо)',
+    'donate.paid':'ОПЛАЧЕНО','donate.successTitle':'Донат отправлен!',
+    'donate.successText':'Сумма добавлена к цели сбора художника. Запись появилась в бегущей строке на главной.',
+    'donate.again':'Ещё один донат','donate.close':'Закрыть',
+    'donate.selectArtist':'Художник','donate.selectMural':'Мурал','donate.anon':'Аноним',
+
+    'info.title':'О проекте','info.manifesto':'Без галерей и посредников',
+    'info.p1':'MuralMap — независимая карта стрит-арта Казахстана. Мы собираем муралы Алматы, Астаны и Шымкента в одном месте: адрес, координаты, автор, история создания.',
+    'info.p2':'Донаты уходят напрямую художникам. Платформа удерживает 5% на хостинг и модерацию, остальные 95% — на краску, леса и подъёмники.',
+    'info.demo':'Демо-режим: реальные платежи не проводятся, данные хранятся только в браузере.',
+    'info.faq':'FAQ',
+    'info.faq1q':'Как работает донат?',
+    'info.faq1a':'Вы выбираете художника или мурал, сумму и отправляете донат в демо-режиме. Сумма сразу прибавляется к цели сбора художника.',
+    'info.faq2q':'Какая комиссия платформы?',
+    'info.faq2a':'5%. Художник получает 95% суммы. Комиссия показывается заранее, до отправки.',
+    'info.faq3q':'Как добавить свой мурал?',
+    'info.faq3a':'Через раздел «Добавить». Точка появится на карте сразу со штампом «На модерации».',
+    'info.faq4q':'Можно ли использовать фото?',
+    'info.faq4a':'В прототипе изображения генерируются как стилизованные SVG-арты, чтобы ни одна картинка не была битой.',
+    'info.faq5q':'Как связаться с командой?',
+    'info.faq5a':'hello@muralmap.kz — отвечаем в течение двух рабочих дней.',
+
+    'common.moderation':'На модерации','common.year':'Год','common.close':'Закрыть',
+    'common.onMap':'На карте','common.city':'Город','common.artist':'Художник',
+    'common.mural':'Мурал','common.all':'Все','common.back':'Назад',
+
+    'toast.near':'Геолокация: центр Алматы (демо)',
+    'toast.route':'Маршрут построен',
+    'toast.routeClear':'Маршрут сброшен'
+  },
+
+  kz: {
+    'nav.home':'Басты бет','nav.map':'Карта','nav.artists':'Суретшілер','nav.routes':'Маршруттар',
+    'nav.add':'Қосу','nav.info':'Жоба туралы','btn.donate':'Донат жасау',
+
+    'hero.kicker':'СТРИТ-АРТ · ҚАЗАҚСТАН · 2026',
+    'hero.title':'Қала — ашық аспан астындағы галерея',
+    'hero.sub':'Муралдарды картадан тап, қабырғалардың тарихын тыңда және көше суретшілерін тікелей қолда — галереясыз және делдалсыз.',
+    'hero.ctaMap':'Картаны ашу','hero.ctaDonate':'Донат жасау',
+    'hero.stamp':'СУРЕТШІГЕ ТІКЕЛЕЙ ДОНАТ',
+    'hero.stat.murals':'мурал','hero.stat.artists':'суретші','hero.stat.raised':'жиналды',
+
+    'home.fresh':'Жаңа муралдар',
+    'home.freshSub':'Кураторлар мен суретшілердің өздері қосқан соңғы жұмыстар.',
+    'home.top':'Үздік суретшілер',
+    'home.topSub':'Жиналған қаражат сырға, орналастыруға және көтергішке кетеді. Платформа комиссиясы — 5%.',
+
+    'map.near':'Маған жақын','map.clearRoute':'Маршрутты тазалау',
+    'filter.city':'Қала','filter.style':'Стиль','filter.artist':'Автор','filter.all':'Барлығы',
+    'map.coords':'Координаттар','map.story':'Тарихы',
+    'map.support':'Авторды қолдау','map.profile':'Суретші профилі',
+
+    'artists.title':'Суретшілер','artists.sub':'Қала қабырғаларын дауыстататындар.',
+    'artists.search':'Аты немесе нигі бойынша іздеу',
+    'artists.sortRaised':'Жинақ сомасы бойынша','artists.sortName':'Аты бойынша',
+    'artists.works':'жұмыс','artists.goal':'Жинақ мақсаты','artists.donate':'Донат',
+    'artists.profile':'Профиль','artists.since':'стрит-артта','artists.social':'Әлеуметтік желілер',
+    'artists.onMap':'Картадағы жұмыстар',
+
+    'routes.title':'Маршруттар','routes.sub':'Кураторлық арт-серуендер: муралдар, аулалар және дұрыс жарық.',
+    'route.points':'нүкте','route.distance':'Қашықтық','route.time':'Уақыт',
+    'route.show':'Маршрутты картадан көру','route.km':'км','route.min':'мин','route.hour':'сағ',
+
+    'add.title':'Мурал қосу',
+    'add.sub':'Картада жоқ қабырғаны білесің бе? Форманы толтыр — модерациядан кейін нүкте картада пайда болады.',
+    'add.city':'Қала','add.name':'Мурал атауы','add.author':'Автор / ник',
+    'add.story':'Жасалу тарихы','add.address':'Мекенжай','add.coords':'Координаттар',
+    'add.pick':'Нүкте қою үшін шағын картаны бас',
+    'add.photo':'Мурал суреті','add.upload':'Файл таңдау','add.preview':'Алдын ала қарау (ақ-қара)',
+    'add.submit':'Модерацияға жіберу',
+    'add.success':'Мурал модерацияға жіберілді. Нүкте картада!',
+    'add.required':'Міндетті өрістерді толтыр',
+
+    'donate.title':'Суретшіге донат','donate.to':'Алушы','donate.amount':'Донат сомасы',
+    'donate.custom':'Өз сомаң, ₸','donate.name':'Сіздің атыңыз','donate.msg':'Суретшіге хабарлама',
+    'donate.phName':'Мысалы, Айдос','donate.phMsg':'Қасбет сырына',
+    'donate.fee':'Комиссия және төлем','donate.artistGets':'Суретшіге',
+    'donate.platform':'Платформа комиссиясы','donate.submit':'Донат жіберу (Демо)',
+    'donate.paid':'ТӨЛЕНДІ','donate.successTitle':'Донат жіберілді!',
+    'donate.successText':'Сома суретшінің жинақ мақсатына қосылды. Жазба басты беттегі жүгіртпе жолда пайда болды.',
+    'donate.again':'Тағы бір донат','donate.close':'Жабу',
+    'donate.selectArtist':'Суретші','donate.selectMural':'Мурал','donate.anon':'Аноним',
+
+    'info.title':'Жоба туралы','info.manifesto':'Галереясыз және делдалсыз',
+    'info.p1':'MuralMap — Қазақстан стрит-артының тәуелсіз картасы. Алматы, Астана және Шымкент муралдарын бір жерде жинаймыз: мекенжай, координаттар, автор, жасалу тарихы.',
+    'info.p2':'Донаттар суретшілерге тікелей жіберіледі. Платформа хостинг пен модерацияға 5% ұстайды, қалған 95% — сырға, орналастыруға және көтергішке.',
+    'info.demo':'Демо-режим: нақты төлемдер жүргізілмейді, деректер тек браузерде сақталады.',
+    'info.faq':'Жиі қойылатын сұрақтар',
+    'info.faq1q':'Донат қалай жұмыс істейді?',
+    'info.faq1a':'Суретшіні немесе муралды, соманы таңдап, демо-режимде донат жібересіз. Сома бірден суретшінің жинағына қосылады.',
+    'info.faq2q':'Платформа комиссиясы қандай?',
+    'info.faq2a':'5%. Суретші соманың 95%-ын алады. Комиссия жіберуге дейін көрсетіледі.',
+    'info.faq3q':'Өз муралымды қалай қосамын?',
+    'info.faq3a':'«Қосу» бөлімі арқылы. Нүкте картада бірден «Модерацияда» штампымен пайда болады.',
+    'info.faq4q':'Суреттерді қолдануға бола ма?',
+    'info.faq4a':'Прототипте бейнелер стильденген SVG-арт ретінде жасалады, сондықтан ешбір сурет бұзылмайды.',
+    'info.faq5q':'Командамен қалай байланысуға болады?',
+    'info.faq5a':'hello@muralmap.kz — екі жұмыс күні ішінде жауап береміз.',
+
+    'common.moderation':'Модерацияда','common.year':'Жыл','common.close':'Жабу',
+    'common.onMap':'Картада','common.city':'Қала','common.artist':'Суретші',
+    'common.mural':'Мурал','common.all':'Барлығы','common.back':'Артқа',
+
+    'toast.near':'Геолокация: Алматы орталығы (демо)',
+    'toast.route':'Маршрут құрылды',
+    'toast.routeClear':'Маршрут тазаланды'
+  }
+};
+
+/* ============================================================
+   4. STATE
+   ============================================================ */
+const state = {
+  lang:'ru',
+  view:'home',
+  city:'all', style:'all', artist:'all',
+  artistQuery:'', artistCity:'all', artistSort:'raised',
+  selectedMural:null,
+  activeRoute:null,
+  openArtist:null,
+  donate:null, donateDone:false,
+  newPhoto:null, pick:null
+};
+
+/* ============================================================
+   5. SHORTHANDS
+   ============================================================ */
+const $  = (s,r)=> (r||document).querySelector(s);
+const $$ = (s,r)=> Array.prototype.slice.call((r||document).querySelectorAll(s));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => Math.round(Number(n)||0).toString().replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+const t   = k => (I18N[state.lang] && I18N[state.lang][k]) || I18N.ru[k] || k;
+const loc = o => o ? (o[state.lang] || o.ru || '') : '';
+const getMural  = id => MURALS.filter(m=>m.id===id)[0] || null;
+const getArtist = id => ARTISTS.filter(a=>a.id===id)[0] || null;
+const getRoute  = id => ROUTES.filter(r=>r.id===id)[0] || null;
+
+function segbar(pct){
+  const filled = Math.max(0, Math.min(10, Math.round(pct/10)));
+  let h = '';
+  for(let i=0;i<10;i++) h += '<span class="'+(i<filled?'on':'')+'"></span>';
+  return '<div class="segbar">'+h+'</div>';
+}
+
+let toastTimer;
+function toast(msg){
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), 2800);
+}
+
+/* ============================================================
+   6. LEAFLET SETUP
+   ============================================================ */
+const TILE_URL = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
+const PIN_ICON = L.divIcon({className:'', html:'<div class="pin"></div>', iconSize:[22,22], iconAnchor:[11,11]});
+
+let map, markerLayer, routeLayer, previewMap, previewLayer;
+let pickMap, pickMarker;
+
+function initMap(){
+  map = L.map('map',{zoomControl:false, attributionControl:true, scrollWheelZoom:true})
+        .setView([48.0196, 66.9237], 5);
+  L.tileLayer(TILE_URL,{maxZoom:19, subdomains:'abcd'}).addTo(map);
+  L.control.zoom({position:'bottomright'}).addTo(map);
+  map.attributionControl.setPrefix(false);
+  map.attributionControl.addAttribution('© OpenStreetMap · © CARTO');
+
+  markerLayer = L.layerGroup().addTo(map);
+  routeLayer  = L.layerGroup().addTo(map);
+  map.on('zoomend', renderMarkers);
+}
+
+function initPreview(){
+  previewMap = L.map('previewMap',{
+    zoomControl:false, attributionControl:false, dragging:false,
+    scrollWheelZoom:false, doubleClickZoom:false, boxZoom:false,
+    keyboard:false, touchZoom:false
+  }).setView([48,68],5);
+  L.tileLayer(TILE_URL,{maxZoom:19, subdomains:'abcd'}).addTo(previewMap);
+  previewMap.fitBounds([[40.2,66.4],[52.6,77.6]]);
+  previewLayer = L.layerGroup().addTo(previewMap);
+  previewMap.getContainer().style.cursor = 'pointer';
+  previewMap.on('click', function(){ go('map'); });
+}
+
+function initPickMap(){
+  if(pickMap) return;
+  pickMap = L.map('pickMap',{zoomControl:true, attributionControl:false})
+    .setView(CITIES_CENTER.almaty, 12);
+  L.tileLayer(TILE_URL,{maxZoom:19, subdomains:'abcd'}).addTo(pickMap);
+  pickMap.on('click', function(e){ setPick(e.latlng.lat, e.latlng.lng); });
+}
+
+function setPick(lat, lng){
+  state.pick = {lat:lat, lng:lng};
+  if(!pickMarker){
+    pickMarker = L.marker([lat,lng], {icon:PIN_ICON}).addTo(pickMap);
+  } else {
+    pickMarker.setLatLng([lat,lng]);
+  }
+  $('#addCoords').value = lat.toFixed(5) + ', ' + lng.toFixed(5);
+}
+
+/* ---------- markers ---------- */
+function filteredMurals(){
+  return MURALS.filter(function(m){
+    if(state.city !== 'all' && m.city !== state.city) return false;
+    if(state.style !== 'all' && m.style !== state.style) return false;
+    if(state.artist !== 'all' && m.artistId !== state.artist) return false;
+    return true;
+  });
+}
+
+function muralMarker(m){
+  const active = state.selectedMural === m.id;
+  const cls = 'pin' + (active?' active':'') + (m.status==='moderation'?' mod':'');
+  const icon = L.divIcon({className:'', html:'<div class="'+cls+'"></div>', iconSize:[22,22], iconAnchor:[11,11]});
+  const mk = L.marker([m.lat, m.lng], {icon:icon, title:loc(m.title)});
+  mk.on('click', function(){ selectMural(m.id); });
+  return mk;
+}
+
+function renderMarkers(){
+  if(!markerLayer) return;
+  markerLayer.clearLayers();
+  const list = filteredMurals();
+  const z = map.getZoom();
+  const step = z >= 11 ? 0 : (z >= 8 ? 1 : (z >= 6 ? 3 : 6));
+
+  if(step === 0){
+    list.forEach(function(m){ markerLayer.addLayer(muralMarker(m)); });
+    return;
+  }
+
+  const groups = {};
+  list.forEach(function(m){
+    const k = Math.round(m.lat/step) + '_' + Math.round(m.lng/step);
+    (groups[k] = groups[k] || []).push(m);
+  });
+
+  Object.keys(groups).forEach(function(k){
+    const g = groups[k];
+    if(g.length === 1){
+      markerLayer.addLayer(muralMarker(g[0]));
+      return;
+    }
+    const lat = g.reduce(function(s,m){return s+m.lat;},0)/g.length;
+    const lng = g.reduce(function(s,m){return s+m.lng;},0)/g.length;
+    const icon = L.divIcon({
+      className:'',
+      html:'<div class="clust">'+g.length+'</div>',
+      iconSize:[36,36], iconAnchor:[18,18]
+    });
+    L.marker([lat,lng],{icon:icon}).on('click', function(){
+      map.setView([lat,lng], Math.min(18, map.getZoom()+2));
+    }).addTo(markerLayer);
+  });
+}
+
+function renderPreview(){
+  if(!previewLayer) return;
+  previewLayer.clearLayers();
+  MURALS.slice(0,8).forEach(function(m){
+    const ic = L.divIcon({className:'', html:'<div class="pulse"></div>', iconSize:[14,14], iconAnchor:[7,7]});
+    L.marker([m.lat,m.lng],{icon:ic, interactive:false}).addTo(previewLayer);
+  });
+}
+
+/* ---------- routes on map ---------- */
+function drawRoute(r){
+  if(!r || !routeLayer) return;
+  routeLayer.clearLayers();
+  const pts = r.murals.map(getMural).filter(Boolean);
+  const latlngs = pts.map(function(m){ return [m.lat, m.lng]; });
+
+  L.polyline(latlngs, {
+    color:'#E9FF1F', weight:6, opacity:.95, lineJoin:'miter', lineCap:'butt'
+  }).addTo(routeLayer);
+
+  pts.forEach(function(m, i){
+    const num = ('0' + (i+1)).slice(-2);
+    const icon = L.divIcon({
+      className:'',
+      html:'<div class="rnum">'+num+'</div>',
+      iconSize:[32,32], iconAnchor:[16,16]
+    });
+    L.marker([m.lat, m.lng], {icon:icon})
+      .on('click', function(){ selectMural(m.id); })
+      .addTo(routeLayer);
+  });
+
+  if(latlngs.length){
+    map.fitBounds(L.latLngBounds(latlngs).pad(0.25));
+  }
+}
+
+/* ============================================================
+   7. RENDERERS
+   ============================================================ */
+function renderFilters(){
+  const fc = $('#fCity'), fs = $('#fStyle'), fa = $('#fArtist');
+  fc.innerHTML = '<option value="all">'+t('filter.all')+' · '+t('filter.city')+'</option>' +
+    Object.keys(CITIES).map(function(k){ return '<option value="'+k+'">'+CITIES[k][state.lang]+'</option>'; }).join('');
+  fc.value = state.city;
+
+  fs.innerHTML = '<option value="all">'+t('filter.all')+' · '+t('filter.style')+'</option>' +
+    Object.keys(STYLES).map(function(k){ return '<option value="'+k+'">'+STYLES[k][state.lang]+'</option>'; }).join('');
+  fs.value = state.style;
+
+  fa.innerHTML = '<option value="all">'+t('filter.all')+' · '+t('filter.artist')+'</option>' +
+    ARTISTS.map(function(a){ return '<option value="'+a.id+'">'+esc(a.name[state.lang])+'</option>'; }).join('');
+  fa.value = state.artist;
+}
+
+function renderHeroStats(){
+  const totalRaised = ARTISTS.reduce(function(s,a){ return s + a.raised; }, 0);
+  $('#heroStats').innerHTML =
+    '<div><b>'+MURALS.length+'</b>'+t('hero.stat.murals')+'</div>' +
+    '<div><b>'+ARTISTS.length+'</b>'+t('hero.stat.artists')+'</div>' +
+    '<div><b>'+fmt(totalRaised)+' ₸</b>'+t('hero.stat.raised')+'</div>';
+}
+
+function muralCard(m){
+  const a = getArtist(m.artistId);
+  const artistName = a ? a.name[state.lang] : (m.authorName || '—');
+  return '<article class="card" data-act="openMural" data-mural="'+m.id+'">' +
+    '<div class="card-img">' +
+      '<img src="'+m.photo+'" alt="'+esc(loc(m.title))+'" loading="lazy">' +
+      '<span class="stamp">'+t('common.year')+' '+m.year+'</span>' +
+      (m.status==='moderation' ? '<span class="stamp" style="top:38px">'+t('common.moderation')+'</span>' : '') +
+    '</div>' +
+    '<div class="card-body">' +
+      '<h3 class="card-title">'+esc(loc(m.title))+'</h3>' +
+      '<div class="card-meta mono">'+CITIES[m.city][state.lang]+' · '+esc(artistName)+'</div>' +
+      '<p class="card-story">'+esc(loc(m.story))+'</p>' +
+      '<div class="card-actions">' +
+        '<button class="btn btn-acid" data-act="donate" data-artist="'+m.artistId+'" data-mural="'+m.id+'">'+t('map.support')+'</button>' +
+        '<button class="btn btn-ghost" data-act="openMural" data-mural="'+m.id+'">'+t('common.onMap')+'</button>' +
+      '</div>' +
+    '</div>' +
+  '</article>';
+}
+
+function artistCard(a){
+  const pct = Math.min(100, Math.round(a.raised / a.goal * 100));
+  const works = MURALS.filter(function(m){ return m.artistId === a.id; }).length;
+  return '<article class="card">' +
+    '<img class="artist-ava" src="'+a.avatar+'" alt="'+esc(a.name[state.lang])+'">' +
+    '<div class="card-body">' +
+      '<h3 class="card-title" style="font-size:18px">'+esc(a.name[state.lang])+'</h3>' +
+      '<div class="card-meta mono">'+a.handle+' · '+CITIES[a.city][state.lang]+' · '+works+' '+t('artists.works')+'</div>' +
+      '<div class="goal-line mono"><span>'+fmt(a.raised)+' ₸</span><span>'+fmt(a.goal)+' ₸</span></div>' +
+      segbar(pct) +
+      '<div class="mono" style="font-size:10.5px;text-align:right">'+pct+'%</div>' +
+      '<div class="card-actions">' +
+        '<button class="btn" data-act="openArtist" data-artist="'+a.id+'">'+t('artists.profile')+'</button>' +
+        '<button class="btn btn-acid" data-act="donate" data-artist="'+a.id+'">'+t('artists.donate')+'</button>' +
+      '</div>' +
+    '</div>' +
+  '</article>';
+}
+
+function renderHome(){
+  renderHeroStats();
+  renderPreview();
+
+  const fresh = MURALS.slice().sort(function(a,b){ return b.year - a.year; }).slice(0,6);
+  $('#freshGrid').innerHTML = fresh.map(muralCard).join('');
+
+  const top = ARTISTS.slice().sort(function(a,b){ return b.raised - a.raised; }).slice(0,4);
+  $('#topArtists').innerHTML = top.map(artistCard).join('');
+}
+
+function renderTicker(){
+  const one = TX.map(function(x){
+    return '<span class="ticker-item">' +
+      '<b>'+esc(x.name)+'</b> → <b>'+esc(x.handle)+'</b>: ' + fmt(x.amount) + ' ₸ ' +
+      '<span class="sep">//</span> «'+esc(loc(x.msg))+'»</span>';
+  }).join('');
+  const repeat = Math.max(1, Math.ceil(6 / Math.max(1, TX.length)));
+  let block = '';
+  for(let i=0;i<repeat;i++) block += one;
+  $('#tickerTrack').innerHTML = block + block;
+}
+
+function renderMapCard(){
+  const card = $('#mapCard');
+  const m = state.selectedMural ? getMural(state.selectedMural) : null;
+  if(!m){ card.classList.remove('open'); card.innerHTML = ''; return; }
+
+  const a = getArtist(m.artistId);
+  card.innerHTML =
+    '<div class="mc-img">' +
+      '<img src="'+m.photo+'" alt="'+esc(loc(m.title))+'">' +
+      '<button class="mc-close" data-act="closeCard" aria-label="close">×</button>' +
+      (m.status==='moderation' ? '<span class="stamp" style="top:8px;left:8px">'+t('common.moderation')+'</span>' : '') +
+    '</div>' +
+    '<div class="mc-body">' +
+      '<h3>'+esc(loc(m.title))+'</h3>' +
+      '<div class="mono mc-row">'+CITIES[m.city][state.lang]+' · '+STYLES[m.style][state.lang]+' · '+m.year+'</div>' +
+      '<div class="mc-row">'+esc(loc(m.address))+'</div>' +
+      '<div class="mono mc-row">'+t('map.coords')+': '+m.lat.toFixed(4)+', '+m.lng.toFixed(4)+'</div>' +
+      '<p class="mc-story">'+esc(loc(m.story))+'</p>' +
+      (a ? '<div class="mc-author" data-act="openArtist" data-artist="'+a.id+'">' +
+            '<img src="'+a.avatar+'" alt="">' +
+            '<div><div class="nm">'+esc(a.name[state.lang])+'</div><div class="hd">'+a.handle+'</div></div>' +
+           '</div>' : '') +
+      '<button class="btn btn-acid full" data-act="donate" data-artist="'+m.artistId+'" data-mural="'+m.id+'">'+t('map.support')+'</button>' +
+    '</div>';
+  card.classList.add('open');
+}
+
+function selectMural(id){
+  state.selectedMural = id;
+  renderMarkers();
+  renderMapCard();
+}
+
+function renderArtists(){
+  const citySel = $('#artistCity'), sortSel = $('#artistSort');
+  citySel.innerHTML = '<option value="all">'+t('filter.all')+' · '+t('filter.city')+'</option>' +
+    Object.keys(CITIES).map(function(k){ return '<option value="'+k+'">'+CITIES[k][state.lang]+'</option>'; }).join('');
+  citySel.value = state.artistCity;
+
+  sortSel.innerHTML =
+    '<option value="raised">'+t('artists.sortRaised')+'</option>' +
+    '<option value="name">'+t('artists.sortName')+'</option>';
+  sortSel.value = state.artistSort;
+
+  const q = (state.artistQuery || '').toLowerCase();
+  let list = ARTISTS.filter(function(a){
+    if(state.artistCity !== 'all' && a.city !== state.artistCity) return false;
+    if(!q) return true;
+    return (a.name.ru + ' ' + a.name.kz + ' ' + a.handle).toLowerCase().indexOf(q) !== -1;
+  });
+
+  if(state.artistSort === 'raised'){
+    list.sort(function(a,b){ return b.raised - a.raised; });
+  } else {
+    list.sort(function(a,b){ return a.name[state.lang].localeCompare(b.name[state.lang]); });
+  }
+
+  $('#artistsGrid').innerHTML = list.length
+    ? list.map(artistCard).join('')
+    : '<div class="panel" style="grid-column:1/-1">—</div>';
+}
+
+function renderRoutes(){
+  $('#routesGrid').innerHTML = ROUTES.map(function(r){
+    const pts = r.murals.map(getMural).filter(Boolean);
+    return '<article class="card route-card">' +
+      '<div class="route-head">' +
+        '<span class="route-city mono">'+CITIES[r.city][state.lang]+'</span>' +
+        '<h3 class="card-title">'+esc(r.name[state.lang])+'</h3>' +
+        '<p class="card-story">'+esc(r.desc[state.lang])+'</p>' +
+      '</div>' +
+      '<div class="route-stats mono">' +
+        '<span><b>'+r.distance+'</b> '+t('route.km')+'</span>' +
+        '<span><b>'+loc(r.time)+'</b></span>' +
+        '<span><b>'+pts.length+'</b> '+t('route.points')+'</span>' +
+      '</div>' +
+      '<ol class="route-list">' +
+        pts.map(function(m,i){
+          return '<li><span class="rn mono">'+('0'+(i+1)).slice(-2)+'</span> ' +
+                 esc(loc(m.title)) + ' <em class="mono">'+esc(loc(m.address))+'</em></li>';
+        }).join('') +
+      '</ol>' +
+      '<button class="btn btn-acid full" data-act="showRoute" data-route="'+r.id+'">'+t('route.show')+'</button>' +
+    '</article>';
+  }).join('');
+}
+
+function renderInfo(){
+  $('#faq').innerHTML = FAQ_KEYS.map(function(pair){
+    return '<details class="faq-item"><summary>'+esc(t(pair[0]))+'</summary><p>'+esc(t(pair[1]))+'</p></details>';
+  }).join('');
+}
+
+function renderAddCity(){
+  const sel = $('#addCity');
+  const prev = sel.value;
+  sel.innerHTML = Object.keys(CITIES).map(function(k){
+    return '<option value="'+k+'">'+CITIES[k][state.lang]+'</option>';
+  }).join('');
+  sel.value = prev || 'almaty';
+}
+
+/* ============================================================
+   8. ARTIST PROFILE MODAL
+   ============================================================ */
+function openArtist(id){
+  const a = getArtist(id);
+  if(!a) return;
+  state.openArtist = id;
+
+  const works = MURALS.filter(function(m){ return m.artistId === id; });
+  const pct = Math.min(100, Math.round(a.raised / a.goal * 100));
+
+  $('#artistBody').innerHTML =
+    '<div class="ap-head">' +
+      '<img class="ap-ava" src="'+a.avatar+'" alt="'+esc(a.name[state.lang])+'">' +
+      '<div>' +
+        '<h2 class="modal-title" style="margin:0;padding:0">'+esc(a.name[state.lang])+'</h2>' +
+        '<div class="mono ap-handle">'+a.handle+' · '+CITIES[a.city][state.lang]+'</div>' +
+        '<div class="mono ap-since">'+t('artists.since')+' '+a.since+' · '+works.length+' '+t('artists.works')+'</div>' +
+      '</div>' +
+    '</div>' +
+    '<p class="ap-bio">'+esc(a.bio[state.lang])+'</p>' +
+    (a.socials && a.socials.length
+      ? '<div class="ap-social mono">'+a.socials.map(function(s){ return '<span>'+esc(s)+'</span>'; }).join('')+'</div>'
+      : '') +
+    '<div class="goalbox">' +
+      '<div class="goal-head"><span>'+t('artists.goal')+'</span>' +
+      '<span>'+esc(loc(a.goalLabel))+'</span></div>' +
+      '<div class="goal-line mono" style="font-size:12px;margin-bottom:8px">' +
+        '<span>'+fmt(a.raised)+' ₸</span><span>'+fmt(a.goal)+' ₸</span></div>' +
+      segbar(pct) +
+      '<div class="goal-pct mono">'+pct+'%</div>' +
+    '</div>' +
+    '<div class="ap-works">' +
+      '<div class="ap-works-title mono">'+t('artists.onMap')+' · '+works.length+'</div>' +
+      '<div class="mini-grid">' +
+        works.map(function(m){
+          return '<button class="mini" data-act="openMural" data-mural="'+m.id+'">' +
+                   '<img src="'+m.photo+'" alt="">' +
+                   '<span>'+esc(loc(m.title))+'</span>' +
+                 '</button>';
+        }).join('') +
+      '</div>' +
+    '</div>' +
+    '<button class="btn btn-acid btn-lg full" data-act="donate" data-artist="'+a.id+'">'+t('map.support')+'</button>';
+
+  $('#artistModal').classList.add('open');
+}
+
+/* ============================================================
+   9. DONATION MODAL
+   ============================================================ */
+function openDonate(artistId, muralId){
+  if(!artistId && muralId){
+    const m = getMural(muralId);
+    if(m) artistId = m.artistId;
+  }
+  if(!artistId) artistId = ARTISTS[0].id;
+
+  state.donate = {
+    artistId: artistId,
+    muralId: muralId || null,
+    amount: 1000,
+    name: '',
+    msg: ''
+  };
+  state.donateDone = false;
+  $('#donateModal').classList.add('open');
+  renderDonate();
+}
+
+function renderDonate(){
+  const box = $('#donateBody');
+  const d = state.donate;
+  if(!d) return;
+
+  /* ---------- SUCCESS SCREEN ---------- */
+  if(state.donateDone){
+    const a = getArtist(d.artistId);
+    box.innerHTML =
+      '<div class="success">' +
+        '<div class="big-stamp">'+t('donate.paid')+'</div>' +
+        '<h3>'+t('donate.successTitle')+'</h3>' +
+        '<div class="sum mono">'+fmt(d.amount)+' ₸ → '+(a ? a.handle : '')+'</div>' +
+        '<p>'+t('donate.successText')+'</p>' +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">' +
+          '<button class="btn" data-act="closeModal">'+t('donate.close')+'</button>' +
+          '<button class="btn btn-acid" data-act="donateAgain">'+t('donate.again')+'</button>' +
+        '</div>' +
+      '</div>';
+    return;
+  }
+
+  /* ---------- FORM ---------- */
+  const currentVal = d.muralId ? 'm:'+d.muralId : 'a:'+d.artistId;
+
+  const artistOpts = ARTISTS.map(function(a){
+    const sel = (currentVal === 'a:'+a.id) ? ' selected' : '';
+    return '<option value="a:'+a.id+'"'+sel+'>'+esc(a.name[state.lang])+' '+a.handle+'</option>';
+  }).join('');
+
+  const muralOpts = MURALS.map(function(m){
+    const sel = (currentVal === 'm:'+m.id) ? ' selected' : '';
+    return '<option value="m:'+m.id+'"'+sel+'>'+esc(loc(m.title))+' — '+CITIES[m.city][state.lang]+'</option>';
+  }).join('');
+
+  box.innerHTML =
+    '<h2 class="modal-title">'+t('donate.title')+'</h2>' +
+    '<div class="field">' +
+      '<label>'+t('donate.to')+'</label>' +
+      '<select class="inp" id="dRecipient">' +
+        '<optgroup label="'+t('donate.selectArtist')+'">'+artistOpts+'</optgroup>' +
+        '<optgroup label="'+t('donate.selectMural')+'">'+muralOpts+'</optgroup>' +
+      '</select>' +
+    '</div>' +
+    '<div class="field">' +
+      '<label>'+t('donate.amount')+'</label>' +
+      '<div class="presets" id="dPresets">' +
+        [500,1000,2500,5000].map(function(v){
+          return '<button type="button" class="preset'+(v===d.amount?' active':'')+'" data-amount="'+v+'">'+fmt(v)+' ₸</button>';
+        }).join('') +
+      '</div>' +
+      '<input class="inp mono" id="dAmount" type="number" min="100" step="100" value="'+d.amount+'">' +
+    '</div>' +
+    '<div class="field">' +
+      '<label>'+t('donate.name')+'</label>' +
+      '<input class="inp" id="dName" placeholder="'+t('donate.phName')+'" value="'+esc(d.name)+'" autocomplete="off">' +
+    '</div>' +
+    '<div class="field">' +
+      '<label>'+t('donate.msg')+'</label>' +
+      '<input class="inp" id="dMsg" placeholder="'+t('donate.phMsg')+'" value="'+esc(d.msg)+'" autocomplete="off">' +
+    '</div>' +
+    '<div class="feebox" id="dFee"></div>' +
+    '<button class="btn btn-acid btn-lg full" id="dSubmit">'+t('donate.submit')+'</button>';
+
+  /* --- wiring --- */
+  const amtInput = $('#dAmount');
+  const presets  = $$('#dPresets .preset');
+
+  function syncAmount(){
+    const val = Math.max(0, Math.round(Number(amtInput.value) || 0));
+    state.donate.amount = val;
+    presets.forEach(function(p){
+      p.classList.toggle('active', Number(p.dataset.amount) === val);
+    });
+    updateFee();
+  }
+
+  function updateFee(){
+    const amt = Math.max(0, Math.round(Number(amtInput.value) || 0));
+    const fee = Math.round(amt * 0.05);
+    $('#dFee').innerHTML =
+      '<div class="fee-row"><span>'+t('donate.artistGets')+' (95%)</span><b>'+fmt(amt - fee)+' ₸</b></div>' +
+      '<div class="fee-row"><span>'+t('donate.platform')+' (5%)</span><b>'+fmt(fee)+' ₸</b></div>';
+  }
+
+  presets.forEach(function(p){
+    p.addEventListener('click', function(){
+      amtInput.value = p.dataset.amount;
+      syncAmount();
+    });
+  });
+  amtInput.addEventListener('input', syncAmount);
+
+  $('#dName').addEventListener('input', function(e){ state.donate.name = e.target.value; });
+  $('#dMsg').addEventListener('input', function(e){ state.donate.msg = e.target.value; });
+
+  $('#dRecipient').addEventListener('change', function(e){
+    const v = e.target.value;
+    if(v.indexOf('a:') === 0){
+      state.donate.artistId = v.slice(2);
+      state.donate.muralId = null;
+    } else {
+      state.donate.muralId = v.slice(2);
+      const m = getMural(state.donate.muralId);
+      state.donate.artistId = m ? m.artistId : state.donate.artistId;
+    }
+  });
+
+  $('#dSubmit').addEventListener('click', submitDonation);
+  updateFee();
+}
+
+function submitDonation(){
+  const d = state.donate;
+  if(!d) return;
+  const amount = Math.max(0, Math.round(Number(d.amount) || 0));
+  if(amount < 1){ toast(t('donate.amount')); return; }
+
+  const artist = getArtist(d.artistId);
+  if(!artist) return;
+
+  const name = (d.name || '').trim() || t('donate.anon');
+  const msgText = (d.msg || '').trim() || t('donate.phMsg');
+
+  /* apply to artist goal */
+  artist.raised += amount;
+
+  /* push to live ticker */
+  TX.unshift({
+    name: name,
+    handle: artist.handle,
+    amount: amount,
+    msg: {ru: msgText, kz: msgText}
+  });
+
+  /* refresh UI */
+  state.donateDone = true;
+  renderDonate();
+  renderTicker();
+  renderHome();
+  renderArtists();
+  renderMapCard();
+  if($('#artistModal').classList.contains('open') && state.openArtist) openArtist(state.openArtist);
+}
+
+/* ============================================================
+   10. NAVIGATION
+   ============================================================ */
+function go(view){
+  state.view = view;
+  $$('.view').forEach(function(v){ v.classList.toggle('active', v.id === 'view-' + view); });
+  $$('.nav button').forEach(function(b){ b.classList.toggle('active', b.dataset.nav === view); });
+  $('#nav').classList.remove('open');
+  window.scrollTo({top:0, behavior:'auto'});
+
+  if(view === 'map'){
+    setTimeout(function(){
+      if(map) map.invalidateSize();
+    }, 80);
+  }
+  if(view === 'add'){
+    setTimeout(function(){
+      initPickMap();
+      if(pickMap) pickMap.invalidateSize();
+    }, 80);
+  }
+}
+
+/* ============================================================
+   11. ADD MURAL
+   ============================================================ */
+function onAddSubmit(e){
+  e.preventDefault();
+  const form = e.target;
+  const val = function(n){
+    const el = form.elements[n];
+    return el ? String(el.value || '').trim() : '';
+  };
+
+  const title = val('title');
+  const author = val('author');
+  if(!title || !author){ toast(t('add.required')); return; }
+
+  const city = val('city') || 'almaty';
+  const address = val('address') || CITIES[city][state.lang];
+  const story = val('story') || t('add.sub');
+
+  const base = CITIES_CENTER[city];
+  const lat = state.pick ? state.pick.lat : base[0] + (Math.random() - 0.5) * 0.012;
+  const lng = state.pick ? state.pick.lng : base[1] + (Math.random() - 0.5) * 0.012;
+
+  /* find or create artist */
+  const handle = '@' + author.toLowerCase().replace(/[^a-zа-яәғқңөұүһі0-9]+/gi, '_').replace(/^_+|_+$/g,'').slice(0,18);
+  let artist = ARTISTS.filter(function(a){ return a.handle.toLowerCase() === handle.toLowerCase(); })[0];
+  if(!artist){
+    artist = {
+      id: 'u' + Date.now(),
+      handle: handle || '@artist',
+      city: city,
+      since: new Date().getFullYear(),
+      name: {ru: author, kz: author},
+      bio: {
+        ru: 'Новый участник MuralMap. Работы добавляются через открытую форму.',
+        kz: 'MuralMap-тың жаңа қатысушысы. Жұмыстар ашық форма арқылы қосылады.'
+      },
+      goal: 100000, raised: 0,
+      goalLabel: {ru:'Материалы для следующей работы', kz:'Келесі жұмысқа материалдар'},
+      socials: []
+    };
+    artist.avatar = avatarURI(artist.id, (author[0] || 'M').toUpperCase());
+    ARTISTS.push(artist);
+  }
+
+  const newId = 'm' + Date.now();
+  MURALS.push({
+    id: newId,
+    city: city,
+    artistId: artist.id,
+    lat: lat,
+    lng: lng,
+    year: new Date().getFullYear(),
+    style: 'street',
+    status: 'moderation',
+    photo: state.newPhoto || artURI('new:' + newId),
+    title: {ru: title, kz: title},
+    address: {ru: address, kz: address},
+    story: {ru: story, kz: story}
+  });
+
+  /* reset form */
+  form.reset();
+  $('#addCoords').value = '';
+  state.newPhoto = null;
+  state.pick = null;
+  if(pickMarker && pickMap){ pickMap.removeLayer(pickMarker); pickMarker = null; }
+  $('#addPreview').src = artURI('draft:' + Date.now());
+
+  renderAll();
+  toast(t('add.success'));
+
+  go('map');
+  setTimeout(function(){
+    if(map) map.setView([lat, lng], 14);
+    selectMural(newId);
+  }, 140);
+}
+
+/* ============================================================
+   12. GLOBAL RENDER
+   ============================================================ */
+function renderAll(){
+  renderFilters();
+  renderHome();
+  renderTicker();
+  renderMarkers();
+  renderMapCard();
+  renderArtists();
+  renderRoutes();
+  renderInfo();
+  renderAddCity();
+
+  if($('#donateModal').classList.contains('open')) renderDonate();
+  if($('#artistModal').classList.contains('open') && state.openArtist) openArtist(state.openArtist);
+}
+
+function applyLang(){
+  document.documentElement.lang = state.lang;
+  $$('[data-i18n]').forEach(function(el){ el.textContent = t(el.dataset.i18n); });
+  $$('[data-i18n-ph]').forEach(function(el){ el.placeholder = t(el.dataset.i18nPh); });
+  $$('.lang button').forEach(function(b){ b.classList.toggle('active', b.dataset.lang === state.lang); });
+  renderAll();
+}
+
+/* ============================================================
+   13. EVENTS
+   ============================================================ */
+function closeModals(){
+  $$('.modal').forEach(function(m){ m.classList.remove('open'); });
+}
+
+function onClick(e){
+  /* navigation */
+  const navBtn = e.target.closest('[data-nav]');
+  if(navBtn){
+    e.preventDefault();
+    go(navBtn.dataset.nav);
+    return;
+  }
+
+  /* language */
+  const langBtn = e.target.closest('[data-lang]');
+  if(langBtn){
+    if(state.lang !== langBtn.dataset.lang){
+      state.lang = langBtn.dataset.lang;
+      applyLang();
+    }
+    return;
+  }
+
+  /* actions */
+  const el = e.target.closest('[data-act]');
+  if(!el) return;
+  const act = el.dataset.act;
+
+  if(act === 'donate'){
+    e.preventDefault();
+    e.stopPropagation();
+    openDonate(el.dataset.artist || null, el.dataset.mural || null);
+    return;
+  }
+
+  if(act === 'donateAgain'){
+    state.donateDone = false;
+    renderDonate();
+    return;
+  }
+
+  if(act === 'openMural'){
+    const id = el.dataset.mural;
+    if(!id) return;
+    const m = getMural(id);
+    closeModals();
+    go('map');
+    setTimeout(function(){
+      if(m && map) map.setView([m.lat, m.lng], 13);
+      selectMural(id);
+    }, 120);
+    return;
+  }
+
+  if(act === 'openArtist'){
+    openArtist(el.dataset.artist);
+    return;
+  }
+
+  if(act === 'closeCard'){
+    state.selectedMural = null;
+    renderMarkers();
+    renderMapCard();
+    return;
+  }
+
+  if(act === 'closeModal'){
+    closeModals();
+    return;
+  }
+
+  if(act === 'showRoute'){
+    const r = getRoute(el.dataset.route);
+    if(!r) return;
+    state.activeRoute = r.id;
+    $('#btnClearRoute').style.display = 'inline-block';
+    go('map');
+    setTimeout(function(){
+      if(map) map.invalidateSize();
+      drawRoute(r);
+      toast(t('toast.route'));
+    }, 120);
+    return;
+  }
+}
+
+function bindEvents(){
+  document.addEventListener('click', onClick);
+
+  /* burger */
+  $('#burger').addEventListener('click', function(e){
+    e.stopPropagation();
+    $('#nav').classList.toggle('open');
+  });
+
+  /* close modal by backdrop */
+  $$('.modal').forEach(function(m){
+    m.addEventListener('click', function(e){
+      if(e.target === m) closeModals();
+    });
+  });
+
+  /* map filters */
+  $('#fCity').addEventListener('change', function(e){
+    state.city = e.target.value;
+    renderMarkers();
+    if(state.selectedMural && !filteredMurals().some(function(m){ return m.id === state.selectedMural; })){
+      state.selectedMural = null;
+      renderMapCard();
+    }
+  });
+
+  $('#fStyle').addEventListener('change', function(e){
+    state.style = e.target.value;
+    renderMarkers();
+    if(state.selectedMural && !filteredMurals().some(function(m){ return m.id === state.selectedMural; })){
+      state.selectedMural = null;
+      renderMapCard();
+    }
+  });
+
+  $('#fArtist').addEventListener('change', function(e){
+    state.artist = e.target.value;
+    renderMarkers();
+    if(state.selectedMural && !filteredMurals().some(function(m){ return m.id === state.selectedMural; })){
+      state.selectedMural = null;
+      renderMapCard();
+    }
+  });
+
+  $('#btnNear').addEventListener('click', function(){
+    if(!map) return;
+    map.setView(CITIES_CENTER.almaty, 14);
+    toast(t('toast.near'));
+  });
+
+  $('#btnClearRoute').addEventListener('click', function(){
+    state.activeRoute = null;
+    if(routeLayer) routeLayer.clearLayers();
+    this.style.display = 'none';
+    toast(t('toast.routeClear'));
+  });
+
+  /* artists toolbar */
+  $('#artistSearch').addEventListener('input', function(e){
+    state.artistQuery = e.target.value;
+    renderArtists();
+  });
+  $('#artistCity').addEventListener('change', function(e){
+    state.artistCity = e.target.value;
+    renderArtists();
+  });
+  $('#artistSort').addEventListener('change', function(e){
+    state.artistSort = e.target.value;
+    renderArtists();
+  });
+
+  /* add mural */
+  $('#addCity').addEventListener('change', function(e){
+    const c = CITIES_CENTER[e.target.value] || CITIES_CENTER.almaty;
+    state.pick = null;
+    $('#addCoords').value = '';
+    if(pickMap) pickMap.setView(c, 12);
+    if(pickMarker && pickMap){ pickMap.removeLayer(pickMarker); pickMarker = null; }
+  });
+
+  $('#addFile').addEventListener('change', function(e){
+    const file = e.target.files && e.target.files[0];
+    if(!file) return;
+    const reader = new FileReader();
+    reader.onload = function(ev){
+      state.newPhoto = ev.target.result;
+      $('#addPreview').src = state.newPhoto;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  $('#addForm').addEventListener('submit', onAddSubmit);
+
+  /* esc closes modals */
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape') closeModals();
+  });
+}
+
+/* ============================================================
+   14. INIT
+   ============================================================ */
+function init(){
+  initMap();
+  initPreview();
+  initPickMap();
+  bindEvents();
+
+  $('#addPreview').src = artURI('draft');
+  applyLang();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
